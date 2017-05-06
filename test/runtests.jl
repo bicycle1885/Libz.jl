@@ -161,8 +161,20 @@ end
 end
 
 @testset "Inflate/Deflate" begin
+    @testset for sz in 0:100
+        # high entropy
+        data = rand(UInt8, sz)
+        @test Libz.inflate(Libz.deflate(data)) == data
+        # low entropy
+        data = rand(0x00:0x0f, sz)
+        @test Libz.inflate(Libz.deflate(data)) == data
+    end
     data = rand(UInt8, 100000)
     @test Libz.inflate(Libz.deflate(data)) == data
+    # truncating compressed data should result in corrupted data
+    @test_throws ErrorException Libz.inflate(Libz.deflate(b"foo")[1:end-1])
+    @test Libz.deflate === Libz.compress
+    @test Libz.inflate === Libz.decompress
 end
 
 @testset "Checksums" begin
